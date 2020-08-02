@@ -1,0 +1,19 @@
+[package]
+name = "candev"
+version = "0.1.0"
+authors = ["René Herrero>"]
+edition = "2018"
+
+[dependencies]
+libc = "0.2.74"
+embedded-hal = { git = "https://github.com/timokroeger/embedded-hal.git", branch = "can" }
+nb = "1.0.0"
+
+[[example]]
+name = "driver"
+
+[[example]]
+name = "receive"
+
+[[example]]
+name = "transmit"
