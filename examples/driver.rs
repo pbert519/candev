@@ -12,6 +12,12 @@ where
     T: Receiver + Transmitter,
 {
     pub fn echo(&mut self) {
+        /* This doesn't work: 
+        if let Ok(frame) = self.t.receive() {
+            self.t.transmit(&frame);
+        }
+        */
+
         loop {
             if let Ok(frame) = self.t.receive() {
                 let frame = <T as Transmitter>::Frame::new_standard(self.id, frame.data());
