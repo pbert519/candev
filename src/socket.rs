@@ -9,10 +9,9 @@ use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
 use std::ptr;
 use std::{io, time};
 
-use crate::hal::can::{Receiver, Transmitter};
+use crate::hal::can;
 use crate::{Filter, Frame};
 
-// constants stolen from C headers
 const AF_CAN: c_int = 29;
 const PF_CAN: c_int = 29;
 const CAN_RAW: c_int = 1;
@@ -266,7 +265,7 @@ impl Socket {
     }
 }
 
-impl Transmitter for Socket {
+impl can::Transmitter for Socket {
     type Frame = Frame;
     type Error = SocketError;
 
@@ -290,7 +289,7 @@ impl Transmitter for Socket {
     }
 }
 
-impl Receiver for Socket {
+impl can::Receiver for Socket {
     type Frame = Frame;
     type Error = SocketError;
 
@@ -308,6 +307,27 @@ impl Receiver for Socket {
         }
 
         Ok(frame)
+    }
+}
+
+impl can::FilteredReceiver for Socket {
+    type Filter = Filter;
+    type FilterGroup = Type;
+    type FilterGroups = Type;
+
+    fn filter_groups(&self) -> <Self as can::FilteredReceiver>::FilterGroups {
+        todo!()
+    }
+
+    fn add_filter(
+        &mut self,
+        filter: &<Self as can::FilteredReceiver>::Filter,
+    ) -> Result<(), <Self as can::Receiver>::Error> {
+        todo!()
+    }
+
+    fn clear_filters(&mut self) {
+        self.set_filters(&[]).unwrap();
     }
 }
 
@@ -348,7 +368,7 @@ mod tests {
 
     #[test]
     fn test_nonexistant_device() {
-        assert!(Socket::open("invalid").is_err());
+        assert!(Socket::new("invalid").is_err());
     }
 
     #[cfg(feature = "vcan_tests")]
