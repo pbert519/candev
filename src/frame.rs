@@ -46,17 +46,6 @@ pub struct Frame {
 }
 
 impl Frame {
-    pub(crate) fn new_empty() -> Self{
-        Frame {
-            id: 0,
-            dlc: 0,
-            pad: 0,
-            res0: 0,
-            res1: 0,
-            data: [0; 8],
-        }
-    }
-
     pub fn new(id: u32, data: &[u8], rtr: bool, err: bool) -> Result<Frame, ConstructionError> {
         let mut id = id;
 
@@ -127,15 +116,19 @@ impl Frame {
 
 impl can::Frame for Frame {
     /// Creates a new frame with a standard identifier.
-    fn new_standard(id: u32, data: &[u8]) -> Self {
-        //FIXME: this doesn't look right
-        Self::new(id, data, false, false).unwrap()
+    fn new_standard(id: u32, data: &[u8]) -> Result<Self, ()> {
+        match Self::new(id, data, false, false) {
+            Ok(frame) => Ok(frame),
+            _ => Err(()),
+        }
     }
 
     /// Creates a new frame with an extended identifier.
-    fn new_extended(id: u32, data: &[u8]) -> Self {
-        //FIXME: this doesn't look right
-        Self::new(id, data, false, false).unwrap()
+    fn new_extended(id: u32, data: &[u8]) -> Result<Self, ()> {
+        match Self::new(id, data, false, false) {
+            Ok(frame) => Ok(frame),
+            _ => Err(()),
+        }
     }
 
     fn id(&self) -> u32 {
@@ -166,5 +159,18 @@ impl can::Frame for Frame {
 
     fn is_remote_frame(&self) -> bool {
         self.id & RTR_FLAG != 0
+    }
+}
+
+impl Default for Frame {
+    fn default() -> Self {
+        Frame {
+            id: 0,
+            dlc: 0,
+            pad: 0,
+            res0: 0,
+            res1: 0,
+            data: [0; 8],
+        }
     }
 }

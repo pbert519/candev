@@ -294,7 +294,7 @@ impl can::Receiver for Socket {
     type Error = SocketError;
 
     fn receive(&mut self) -> Result<<Self>::Frame, nb::Error<<Self>::Error>> {
-        let mut frame = Frame::new_empty();
+        let mut frame = Frame::default();
         let read_rv = unsafe {
             let frame_ptr = &mut frame as *mut Frame;
             read(self.fd, frame_ptr as *mut c_void, size_of::<Frame>())
@@ -310,6 +310,7 @@ impl can::Receiver for Socket {
     }
 }
 
+/* This piece is not working
 impl can::FilteredReceiver for Socket {
     type Filter = Filter;
     type FilterGroup = Type;
@@ -330,6 +331,7 @@ impl can::FilteredReceiver for Socket {
         self.set_filters(&[]).unwrap();
     }
 }
+*/
 
 impl AsRawFd for Socket {
     fn as_raw_fd(&self) -> RawFd {

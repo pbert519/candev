@@ -20,7 +20,7 @@ where
 
         loop {
             if let Ok(frame) = self.t.receive() {
-                let frame = <T as Transmitter>::Frame::new_standard(self.id, frame.data());
+                let frame = <T as Transmitter>::Frame::new_standard(self.id, frame.data()).unwrap();
                 thread::sleep(time::Duration::from_secs(1));
                 self.t.transmit(&frame);
             }
@@ -39,7 +39,7 @@ fn main() {
     let mut driver2 = Driver { id: 2, t: socket2 };
     let child2 = thread::spawn(move || {
         let frame =
-            <Socket as Transmitter>::Frame::new_standard(driver2.id, &[0xDE, 0xAD, 0xBE, 0xFF]);
+            <Socket as Transmitter>::Frame::new_standard(driver2.id, &[0xDE, 0xAD, 0xBE, 0xFF]).unwrap();
         driver2.t.transmit(&frame).unwrap();
         driver2.echo();
     });
