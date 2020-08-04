@@ -1,5 +1,5 @@
 use crate::hal::can;
-use crate::{CanError, CanErrorDecodingFailure, ConstructionError};
+use crate::{CanError, DecodingError, ConstructionError};
 
 /// if set, indicate 29 bit extended format
 pub const EFF_FLAG: u32 = 0x80000000;
@@ -108,8 +108,8 @@ impl Frame {
     /// `CanError` instances.
     ///
     /// If the frame is malformed, this may fail with a
-    /// `CanErrorDecodingFailure`.
-    pub fn error(&self) -> Result<CanError, CanErrorDecodingFailure> {
+    /// `DecodingError`.
+    pub fn error(&self) -> Result<CanError, DecodingError> {
         CanError::from_frame(self)
     }
 }

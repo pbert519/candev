@@ -1,7 +1,7 @@
 use embedded_hal as hal;
 
 mod error;
-pub use error::{CanError, CanErrorDecodingFailure, ConstructionError};
+pub use error::{CanError, DecodingError, ConstructionError};
 
 mod filter;
 pub use filter::Filter;
