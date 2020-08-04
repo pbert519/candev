@@ -49,4 +49,4 @@ You'll be able to observe the interaction of the two driver instances on the fir
 
 This project initial starting point was based off [socketcan-rs](https://github.com/mbr/socketcan-rs).
 
-Big thanks to @timokroeger for his help and contributions to the [embedded-hal](https://github.com/rust-embedded/embedded-hal) project.
+Big thanks to [Timo](https://github.com/timokroeger) for his help and developing the CAN traits for the [embedded-hal](https://github.com/rust-embedded/embedded-hal) project.
