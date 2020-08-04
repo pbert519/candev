@@ -22,6 +22,7 @@ where
             if let Ok(frame) = self.t.receive() {
                 let frame = <T as Transmitter>::Frame::new_standard(self.id, frame.data()).unwrap();
                 thread::sleep(time::Duration::from_secs(1));
+                //FIXME: Adding .unwrap() gives an error???
                 self.t.transmit(&frame);
             }
         }
