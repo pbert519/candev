@@ -2,7 +2,6 @@
 
 ![mit](https://img.shields.io/github/license/reneherrero/candev)
 ![build](https://img.shields.io/github/workflow/status/reneherrero/candev/Continuous%20Integration)
-[![coverage](https://coveralls.io/repos/github/reneherrero/candev/badge.svg?branch=master)](https://coveralls.io/github/reneherrero/candev?branch=master)
 
 SocketCAN based *experimental* library that implements @timokroeger's proposed ([PR](https://github.com/rust-embedded/embedded-hal/pull/212)) [embedded-hal](https://github.com/timokroeger/embedded-hal/tree/can) CAN traits.
 
