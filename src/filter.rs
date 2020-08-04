@@ -52,7 +52,7 @@ impl can::Filter for Filter {
     }
 
     fn allow_remote(&mut self) -> &mut Self {
-        self.id |= CAN_RTR_FLAG;
+        self.mask |= CAN_RTR_FLAG;
         self
     }
 

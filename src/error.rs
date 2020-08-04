@@ -12,16 +12,16 @@ pub enum ConstructionError {
 
 /// Helper function to retrieve a specific byte of frame data or returning an
 /// `Err(..)` otherwise.
-fn get_data(frame: &Frame, idx: u8) -> Result<u8, CanErrorDecodingFailure> {
+fn get_data(frame: &Frame, idx: u8) -> Result<u8, CanErrorDecodingError> {
     Ok(*(frame
         .data()
         .get(idx as usize)
-        .ok_or_else(|| CanErrorDecodingFailure::NotEnoughData(idx)))?)
+        .ok_or_else(|| CanErrorDecodingError::NotEnoughData(idx)))?)
 }
 
 /// Error decoding a CanError from a CanFrame.
 #[derive(Copy, Clone, Debug)]
-pub enum CanErrorDecodingFailure {
+pub enum CanErrorDecodingError {
     /// The supplied CanFrame did not have the error bit set.
     NotAnError,
 
@@ -113,9 +113,9 @@ pub enum ControllerProblem {
 }
 
 impl TryFrom<u8> for ControllerProblem {
-    type Error = CanErrorDecodingFailure;
+    type Error = CanErrorDecodingError;
 
-    fn try_from(val: u8) -> Result<ControllerProblem, CanErrorDecodingFailure> {
+    fn try_from(val: u8) -> Result<ControllerProblem, CanErrorDecodingError> {
         Ok(match val {
             0x00 => ControllerProblem::Unspecified,
             0x01 => ControllerProblem::ReceiveBufferOverflow,
@@ -125,7 +125,7 @@ impl TryFrom<u8> for ControllerProblem {
             0x10 => ControllerProblem::ReceiveErrorPassive,
             0x20 => ControllerProblem::TransmitErrorPassive,
             0x40 => ControllerProblem::Active,
-            _ => return Err(CanErrorDecodingFailure::InvalidControllerProblem),
+            _ => return Err(CanErrorDecodingError::InvalidControllerProblem),
         })
     }
 }
@@ -161,9 +161,9 @@ pub enum ViolationType {
 }
 
 impl TryFrom<u8> for ViolationType {
-    type Error = CanErrorDecodingFailure;
+    type Error = CanErrorDecodingError;
 
-    fn try_from(val: u8) -> Result<ViolationType, CanErrorDecodingFailure> {
+    fn try_from(val: u8) -> Result<ViolationType, CanErrorDecodingError> {
         Ok(match val {
             0x00 => ViolationType::Unspecified,
             0x01 => ViolationType::SingleBitError,
@@ -174,7 +174,7 @@ impl TryFrom<u8> for ViolationType {
             0x20 => ViolationType::BusOverload,
             0x40 => ViolationType::Active,
             0x80 => ViolationType::TransmissionError,
-            _ => return Err(CanErrorDecodingFailure::InvalidViolationType),
+            _ => return Err(CanErrorDecodingError::InvalidViolationType),
         })
     }
 }
@@ -246,9 +246,9 @@ pub enum Location {
 }
 
 impl TryFrom<u8> for Location {
-    type Error = CanErrorDecodingFailure;
+    type Error = CanErrorDecodingError;
 
-    fn try_from(val: u8) -> Result<Location, CanErrorDecodingFailure> {
+    fn try_from(val: u8) -> Result<Location, CanErrorDecodingError> {
         Ok(match val {
             0x00 => Location::Unspecified,
             0x03 => Location::StartOfFrame,
@@ -270,7 +270,7 @@ impl TryFrom<u8> for Location {
             0x1B => Location::AckDelimiter,
             0x1A => Location::EndOfFrame,
             0x12 => Location::Intermission,
-            _ => return Err(CanErrorDecodingFailure::InvalidLocation),
+            _ => return Err(CanErrorDecodingError::InvalidLocation),
         })
     }
 }
@@ -289,9 +289,9 @@ pub enum TransceiverError {
 }
 
 impl TryFrom<u8> for TransceiverError {
-    type Error = CanErrorDecodingFailure;
+    type Error = CanErrorDecodingError;
 
-    fn try_from(val: u8) -> Result<TransceiverError, CanErrorDecodingFailure> {
+    fn try_from(val: u8) -> Result<TransceiverError, CanErrorDecodingError> {
         Ok(match val {
             0x00 => TransceiverError::Unspecified,
             0x04 => TransceiverError::CanHighNoWire,
@@ -303,15 +303,15 @@ impl TryFrom<u8> for TransceiverError {
             0x60 => TransceiverError::CanLowShortToVcc,
             0x70 => TransceiverError::CanLowShortToGnd,
             0x80 => TransceiverError::CanLowShortToCanHigh,
-            _ => return Err(CanErrorDecodingFailure::InvalidTransceiverError),
+            _ => return Err(CanErrorDecodingError::InvalidTransceiverError),
         })
     }
 }
 
 impl CanError {
-    pub fn from_frame(frame: &Frame) -> Result<CanError, CanErrorDecodingFailure> {
+    pub fn from_frame(frame: &Frame) -> Result<CanError, CanErrorDecodingError> {
         if !frame.is_error() {
-            return Err(CanErrorDecodingFailure::NotAnError);
+            return Err(CanErrorDecodingError::NotAnError);
         }
 
         match frame.err() {
@@ -331,7 +331,7 @@ impl CanError {
             0x00000040 => Ok(CanError::BusOff),
             0x00000080 => Ok(CanError::BusError),
             0x00000100 => Ok(CanError::Restarted),
-            e => Err(CanErrorDecodingFailure::UnknownErrorType(e)),
+            e => Err(CanErrorDecodingError::UnknownErrorType(e)),
         }
     }
 }
