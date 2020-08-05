@@ -1,23 +1,8 @@
 use crate::hal::can;
-use crate::{CanError, DecodingError, ConstructionError};
-
-/// if set, indicate 29 bit extended format
-pub const EFF_FLAG: u32 = 0x80000000;
-
-/// remote transmission request flag
-pub const RTR_FLAG: u32 = 0x40000000;
-
-/// error flag
-pub const ERR_FLAG: u32 = 0x20000000;
-
-/// valid bits in standard frame id
-pub const SFF_MASK: u32 = 0x000007ff;
-
-/// valid bits in extended frame id
-pub const EFF_MASK: u32 = 0x1fffffff;
-
-/// valid bits in error frame
-pub const ERR_MASK: u32 = 0x1fffffff;
+use crate::{
+    CanError, ConstructionError, DecodingError, EFF_FLAG, EFF_MASK, ERR_FLAG, ERR_MASK, RTR_FLAG,
+    SFF_MASK,
+};
 
 /// Frame
 ///
@@ -28,19 +13,14 @@ pub const ERR_MASK: u32 = 0x1fffffff;
 pub struct Frame {
     /// 32 bit CAN_ID + EFF/RTR/ERR flags
     id: u32,
-
     /// data length. Bytes beyond are not valid
     dlc: u8,
-
     /// padding
     pad: u8,
-
     /// reserved
     res0: u8,
-
     /// reserved
     res1: u8,
-
     /// buffer for data
     data: [u8; 8],
 }

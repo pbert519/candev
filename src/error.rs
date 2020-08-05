@@ -57,7 +57,7 @@ pub enum CanError {
     LostArbitration(u8),
 
     /// Controller problem, see `ControllerProblem`
-    ControllerProblem(ControllerProblem),
+    ControllerProblem(ControllerError),
 
     /// Protocol violation at the specified `Location`. See `ProtocolViolation`
     /// for details.
@@ -86,7 +86,7 @@ pub enum CanError {
 }
 
 #[derive(Copy, Clone, Debug)]
-pub enum ControllerProblem {
+pub enum ControllerError {
     // unspecified
     Unspecified,
 
@@ -112,19 +112,19 @@ pub enum ControllerProblem {
     Active,
 }
 
-impl TryFrom<u8> for ControllerProblem {
+impl TryFrom<u8> for ControllerError {
     type Error = DecodingError;
 
-    fn try_from(val: u8) -> Result<ControllerProblem, DecodingError> {
+    fn try_from(val: u8) -> Result<ControllerError, DecodingError> {
         Ok(match val {
-            0x00 => ControllerProblem::Unspecified,
-            0x01 => ControllerProblem::ReceiveBufferOverflow,
-            0x02 => ControllerProblem::TransmitBufferOverflow,
-            0x04 => ControllerProblem::ReceiveErrorWarning,
-            0x08 => ControllerProblem::TransmitErrorWarning,
-            0x10 => ControllerProblem::ReceiveErrorPassive,
-            0x20 => ControllerProblem::TransmitErrorPassive,
-            0x40 => ControllerProblem::Active,
+            0x00 => ControllerError::Unspecified,
+            0x01 => ControllerError::ReceiveBufferOverflow,
+            0x02 => ControllerError::TransmitBufferOverflow,
+            0x04 => ControllerError::ReceiveErrorWarning,
+            0x08 => ControllerError::TransmitErrorWarning,
+            0x10 => ControllerError::ReceiveErrorPassive,
+            0x20 => ControllerError::TransmitErrorPassive,
+            0x40 => ControllerError::Active,
             _ => return Err(DecodingError::InvalidControllerProblem),
         })
     }
@@ -317,7 +317,7 @@ impl CanError {
         match frame.err() {
             0x00000001 => Ok(CanError::TransmitTimeout),
             0x00000002 => Ok(CanError::LostArbitration(get_data(frame, 0)?)),
-            0x00000004 => Ok(CanError::ControllerProblem(ControllerProblem::try_from(
+            0x00000004 => Ok(CanError::ControllerProblem(ControllerError::try_from(
                 get_data(frame, 1)?,
             )?)),
 
@@ -341,7 +341,6 @@ pub trait ControllerSpecificErrorInformation {
 }
 
 impl ControllerSpecificErrorInformation for Frame {
-    #[inline]
     fn get_ctrl_err(&self) -> Option<&[u8]> {
         let data = self.data();
 

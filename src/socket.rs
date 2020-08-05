@@ -1,27 +1,19 @@
+use crate::{
+    hal::can, Filter, FilterGroup, Frame, AF_CAN, CAN_RAW, CAN_RAW_ERR_FILTER, CAN_RAW_FILTER_MAX,
+    CAN_RAW_JOIN_FILTERS, CAN_RAW_LOOPBACK, CAN_RAW_RECV_OWN_MSGS, PF_CAN, SOL_CAN_RAW,
+};
 use libc::{
     bind, c_int, c_short, c_uint, c_void, close, fcntl, if_nametoindex, read, setsockopt, sockaddr,
     socket, socklen_t, suseconds_t, time_t, timeval, write, F_GETFL, F_SETFL, O_NONBLOCK, SOCK_RAW,
     SOL_SOCKET, SO_RCVTIMEO, SO_SNDTIMEO,
 };
-use std::ffi::CString;
-use std::mem::size_of;
-use std::os::unix::io::{AsRawFd, FromRawFd, IntoRawFd, RawFd};
-use std::ptr;
-use std::{io, time};
-
-use crate::hal::can;
-use crate::{Filter, Frame};
-
-const AF_CAN: c_int = 29;
-const PF_CAN: c_int = 29;
-const CAN_RAW: c_int = 1;
-const SOL_CAN_BASE: c_int = 100;
-const SOL_CAN_RAW: c_int = SOL_CAN_BASE + CAN_RAW;
-const CAN_RAW_FILTER: c_int = 1;
-const CAN_RAW_ERR_FILTER: c_int = 2;
-const CAN_RAW_LOOPBACK: c_int = 3;
-const CAN_RAW_RECV_OWN_MSGS: c_int = 4;
-const CAN_RAW_JOIN_FILTERS: c_int = 6;
+use std::{
+    ffi::CString,
+    io,
+    iter::{once, Once},
+    mem::size_of,
+    time,
+};
 
 #[derive(Debug)]
 #[repr(C)]
@@ -52,6 +44,7 @@ impl From<io::Error> for SocketError {
 #[derive(Debug)]
 pub struct Socket {
     fd: c_int,
+    filter_group: FilterGroup,
 }
 
 impl Socket {
@@ -109,7 +102,10 @@ impl Socket {
             return Err(SocketError::from(e));
         }
 
-        Ok(Socket { fd: sock_fd })
+        Ok(Socket {
+            fd: sock_fd,
+            filter_group: FilterGroup::new(sock_fd),
+        })
     }
 
     fn close(&mut self) -> io::Result<()> {
@@ -156,17 +152,6 @@ impl Socket {
     /// Sets the write timeout on the socket
     pub fn set_write_timeout(&self, duration: time::Duration) -> io::Result<()> {
         self.set_socket_option(self.fd, SOL_SOCKET, SO_SNDTIMEO, &c_timeval_new(duration))
-    }
-
-    /// Sets filters on the socket.
-    ///
-    /// CAN packages received by SocketCAN are matched against these filters,
-    /// only matching packets are returned by the interface.
-    ///
-    /// See `CanFilter` for details on how filtering works. By default, all
-    /// single filter matching all incoming frames is installed.
-    pub fn set_filters(&self, filters: &[Filter]) -> io::Result<()> {
-        self.set_socket_option_mult(self.fd, SOL_CAN_RAW, CAN_RAW_FILTER, filters)
     }
 
     /// Sets the error mask on the socket.
@@ -231,38 +216,6 @@ impl Socket {
         }
         Ok(())
     }
-
-    fn set_socket_option_mult<T>(
-        &self,
-        fd: c_int,
-        level: c_int,
-        name: c_int,
-        values: &[T],
-    ) -> io::Result<()> {
-        let rv = if values.len() < 1 {
-            // can't pass in a pointer to the first element if a 0-length slice,
-            // pass a nullpointer instead
-            unsafe { setsockopt(fd, level, name, ptr::null(), 0) }
-        } else {
-            unsafe {
-                let val_ptr = &values[0] as *const T;
-
-                setsockopt(
-                    fd,
-                    level,
-                    name,
-                    val_ptr as *const c_void,
-                    (size_of::<T>() * values.len()) as socklen_t,
-                )
-            }
-        };
-
-        if rv != 0 {
-            return Err(io::Error::last_os_error());
-        }
-
-        Ok(())
-    }
 }
 
 impl can::Transmitter for Socket {
@@ -310,47 +263,34 @@ impl can::Receiver for Socket {
     }
 }
 
-/* This piece is not working
 impl can::FilteredReceiver for Socket {
     type Filter = Filter;
-    type FilterGroup = Type;
-    type FilterGroups = Type;
-
-    fn filter_groups(&self) -> <Self as can::FilteredReceiver>::FilterGroups {
-        todo!()
-    }
+    type FilterGroup = FilterGroup;
+    type FilterGroups = std::iter::Once<FilterGroup>;
 
     fn add_filter(
         &mut self,
         filter: &<Self as can::FilteredReceiver>::Filter,
     ) -> Result<(), <Self as can::Receiver>::Error> {
-        todo!()
+        if self.filter_group.len() == CAN_RAW_FILTER_MAX as usize {
+            return Err(SocketError::IOError(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                format!("Maximum number of filters is {}", CAN_RAW_FILTER_MAX),
+            )));
+        }
+        self.filter_group.add_filter(filter.clone());
+        Ok(())
     }
 
     fn clear_filters(&mut self) {
-        self.set_filters(&[]).unwrap();
+        self.filter_group.clear_filters();
+    }
+
+    fn filter_groups(&self) -> Once<FilterGroup> {
+        // All filters have the same capability: There is only one group.
+        once(self.filter_group.clone())
     }
 }
-*/
-
-impl AsRawFd for Socket {
-    fn as_raw_fd(&self) -> RawFd {
-        self.fd
-    }
-}
-
-impl FromRawFd for Socket {
-    unsafe fn from_raw_fd(fd: RawFd) -> Socket {
-        Socket { fd: fd }
-    }
-}
-
-impl IntoRawFd for Socket {
-    fn into_raw_fd(self) -> RawFd {
-        self.fd
-    }
-}
-
 impl Drop for Socket {
     fn drop(&mut self) {
         self.close().ok(); // ignore result
