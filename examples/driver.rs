@@ -1,7 +1,6 @@
 use candev::Socket;
 use embedded_hal::can::{Frame, Receiver, Transmitter};
-use nb::block;
-use std::{thread, time};
+use std::thread;
 
 #[derive(Debug)]
 struct Driver<T> {
@@ -9,21 +8,17 @@ struct Driver<T> {
     pub t: T,
 }
 
-impl<T> Driver<T>
+impl<T, F, E> Driver<T>
 where
-    T: Receiver + Transmitter,
-    <T as Transmitter>::Error: core::fmt::Debug,
+    F: Frame,
+    E: core::fmt::Debug,
+    T: Receiver<Frame = F, Error = E> + Transmitter<Frame = F, Error = E>,
 {
     pub fn echo(&mut self) {
-        let mut count = 0;
-        while count < 3 {
+        loop {
             if let Ok(frame) = self.t.receive() {
-                let frame = <T as Transmitter>::Frame::new_standard(self.id, frame.data()).unwrap();
-                thread::sleep(time::Duration::from_secs(1));
-                block!(self.t.transmit(&frame)).unwrap();
+                self.t.transmit(&frame).unwrap();
             }
-
-            count += 1;
         }
     }
 }
