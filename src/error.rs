@@ -1,5 +1,18 @@
 use crate::Frame;
-use std::convert::TryFrom;
+use std::{convert::TryFrom, io::Error};
+
+/// Errors opening socket
+#[derive(Debug)]
+pub enum SocketError {
+    /// System error while trying to look up device name
+    IOError(Error),
+}
+
+impl From<Error> for SocketError {
+    fn from(e: Error) -> SocketError {
+        SocketError::IOError(e)
+    }
+}
 
 #[derive(Debug, Copy, Clone)]
 /// Error that occurs when creating CAN packets

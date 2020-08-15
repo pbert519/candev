@@ -1,6 +1,7 @@
 use crate::{
-    hal::can, Filter, FilterGroup, Frame, AF_CAN, CAN_RAW, CAN_RAW_ERR_FILTER, CAN_RAW_FILTER_MAX,
-    CAN_RAW_JOIN_FILTERS, CAN_RAW_LOOPBACK, CAN_RAW_RECV_OWN_MSGS, PF_CAN, SOL_CAN_RAW,
+    hal::can, Filter, FilterGroup, Frame, SocketError, AF_CAN, CAN_RAW, CAN_RAW_ERR_FILTER,
+    CAN_RAW_FILTER_MAX, CAN_RAW_JOIN_FILTERS, CAN_RAW_LOOPBACK, CAN_RAW_RECV_OWN_MSGS, PF_CAN,
+    SOL_CAN_RAW,
 };
 use libc::{
     bind, c_int, c_short, c_uint, c_void, close, fcntl, if_nametoindex, read, setsockopt, sockaddr,
@@ -22,19 +23,6 @@ struct CanAddr {
     if_index: c_int, // address familiy,
     rx_id: u32,
     tx_id: u32,
-}
-
-#[derive(Debug)]
-/// Errors opening socket
-pub enum SocketError {
-    /// System error while trying to look up device name
-    IOError(io::Error),
-}
-
-impl From<io::Error> for SocketError {
-    fn from(e: io::Error) -> SocketError {
-        SocketError::IOError(e)
-    }
 }
 
 /// A socket for a CAN device.
@@ -248,15 +236,23 @@ impl can::Receiver for Socket {
 
     fn receive(&mut self) -> Result<<Self>::Frame, nb::Error<<Self>::Error>> {
         let mut frame = Frame::default();
-        let read_rv = unsafe {
+        let nbytes = unsafe {
             let frame_ptr = &mut frame as *mut Frame;
             read(self.fd, frame_ptr as *mut c_void, size_of::<Frame>())
         };
 
-        if read_rv as usize != size_of::<Frame>() {
-            return Err(nb::Error::from(SocketError::from(
-                io::Error::last_os_error(),
-            )));
+        if nbytes as usize != size_of::<Frame>() {
+            let e = io::Error::last_os_error();
+            match e.kind() {
+                io::ErrorKind::WouldBlock => {
+                    return Err(nb::Error::WouldBlock);
+                }
+                _ => {
+                    return Err(nb::Error::from(SocketError::from(
+                        io::Error::last_os_error(),
+                    )));
+                }
+            };
         }
 
         Ok(frame)
@@ -313,53 +309,61 @@ mod tests {
         assert!(Socket::new("invalid").is_err());
     }
 
-    #[cfg(feature = "vcan_tests")]
-    mod vcan_tests {
+    #[cfg(feature = "vcan0")]
+    mod vcan {
+        use crate::hal::can::{Frame, Receiver, Transmitter};
+        use crate::{Socket, ERR_MASK_ALL, ERR_MASK_NONE};
+        use nb::block;
         use std::time;
-        use ShouldRetry;
-        use {CanFrame, CanInterface, Socket, ERR_MASK_ALL, ERR_MASK_NONE};
+
+        const VCAN0: &str = "vcan0";
 
         #[test]
         fn vcan0_timeout() {
-            let cs = Socket::open("vcan0").unwrap();
-            cs.set_read_timeout(time::Duration::from_millis(100))
+            let mut socket = Socket::new(VCAN0).unwrap();
+            socket
+                .set_read_timeout(time::Duration::from_millis(100))
                 .unwrap();
-            assert!(cs.read_frame().should_retry());
+            block!(socket.receive()).unwrap();
         }
 
         #[test]
         fn vcan0_set_error_mask() {
-            let cs = Socket::open("vcan0").unwrap();
-            cs.set_error_mask(ERR_MASK_ALL).unwrap();
-            cs.set_error_mask(ERR_MASK_NONE).unwrap();
+            let socket = Socket::new(VCAN0).unwrap();
+            socket.set_error_mask(ERR_MASK_ALL).unwrap();
+            socket.set_error_mask(ERR_MASK_NONE).unwrap();
         }
 
         #[test]
         fn vcan0_enable_own_loopback() {
-            let cs = Socket::open("vcan0").unwrap();
-            cs.set_loopback(true).unwrap();
-            cs.set_recv_own_msgs(true).unwrap();
+            let id: u32 = 0x123;
+            let data: &[u8] = &[0xDE, 0xAD, 0xBE, 0xFF];
+            let mut socket = Socket::new(VCAN0).unwrap();
+            socket.set_loopback(true).unwrap();
+            socket.set_recv_own_msgs(true).unwrap();
 
-            let frame = CanFrame::new(0x123, &[], true, false).unwrap();
+            let frame = <Socket as Transmitter>::Frame::new_standard(id, data).unwrap();
 
-            cs.write_frame(&frame).unwrap();
+            socket.transmit(&frame).unwrap();
 
-            cs.read_frame().unwrap();
-        }
-
-        #[test]
-        fn vcan0_set_down() {
-            let can_if = CanInterface::open("vcan0").unwrap();
-            can_if.bring_down().unwrap();
+            let frame = socket.receive().unwrap();
+            assert_eq!(frame.id(), id);
+            assert_eq!(frame.data(), data);
         }
 
         #[test]
         fn vcan0_test_nonblocking() {
-            let cs = Socket::open("vcan0").unwrap();
-            cs.set_nonblocking(true);
+            let mut socket = Socket::new(VCAN0).unwrap();
+            socket.set_nonblocking(true).unwrap();
 
-            // no timeout set, but should return immediately
-            assert!(cs.read_frame().should_retry());
+            // no timeout set: should return immediately
+            match socket.receive() {
+                Ok(_) => assert!(false),
+                Err(e) => match e {
+                    nb::Error::WouldBlock => {}
+                    _ => assert!(false),
+                },
+            }
         }
     }
 }

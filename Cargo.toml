@@ -1,13 +1,17 @@
 [package]
 name = "candev"
+categories = ["os::unix-apis"]
 version = "0.1.0"
 authors = ["René Herrero>"]
 edition = "2018"
 
 [dependencies]
 libc = "0.2.74"
-embedded-hal = { git = "https://github.com/reneherrero/embedded-hal.git" }
+embedded-hal = { git = "https://github.com/reneherrero/embedded-hal.git", branch = "can" }
 nb = "1.0.0"
+
+[features]
+vcan0 = []
 
 [[example]]
 name = "driver"

@@ -1,6 +1,7 @@
 # candev
 
 ![ci](https://github.com/reneherrero/candev/workflows/ci/badge.svg)
+![license](https://img.shields.io/badge/license-MIT%20or%20Apache--2-brightgreen)
 
 SocketCAN based experimental library that implements proposed ([PR](https://github.com/rust-embedded/embedded-hal/pull/212)) `embedded-hal` CAN traits.
 
@@ -14,6 +15,17 @@ SocketCAN based experimental library that implements proposed ([PR](https://gith
 sudo modprobe vcan
 sudo ip link add dev vcan0 type vcan
 sudo ip link set up vcan0
+```
+
+Note that this can be automated at startup by:
+1. Adding a line with `vcan` in `/etc/modules`
+2. Adding the following to `/etc/network/interfaces`
+```
+auto vcan0
+iface vcan0 inet manual
+pre-up /sbin/ip link add dev $IFACE type vcan
+up /sbin/ip link set up $IFACE
+down /sbin/ip link set down $IFACE
 ```
 
 ### Receive

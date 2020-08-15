@@ -3,7 +3,7 @@ use libc::c_int;
 use embedded_hal as hal;
 
 mod error;
-pub use error::{CanError, DecodingError, ConstructionError};
+pub use error::{CanError, ConstructionError, DecodingError, SocketError};
 
 mod filter;
 pub use filter::{Filter, FilterGroup, FilterGroups};
@@ -12,7 +12,7 @@ mod frame;
 pub use frame::Frame;
 
 mod socket;
-pub use socket::{Socket, SocketError};
+pub use socket::Socket;
 
 const AF_CAN: c_int = 29;
 const PF_CAN: c_int = 29;
@@ -43,6 +43,12 @@ const EFF_MASK: u32 = 0x1fffffff;
 /// valid bits in error frame
 const ERR_MASK: u32 = 0x1fffffff;
 
+/// error mask that will instruct the socket to report all errors
+pub const ERR_MASK_ALL: u32 = ERR_MASK;
+
+/// an error mask that will instruct the socket to drop all errors
+pub const ERR_MASK_NONE: u32 = 0x00000000;
+
 // EFF/SFF is set in the MSB
 const CAN_EFF_FLAG: u32 = 0x80000000;
 
@@ -57,4 +63,3 @@ const CAN_RTR_FLAG: u32 = 0x40000000;
 
 // maximum number of can_filter set via setsockopt()
 pub const CAN_RAW_FILTER_MAX: c_int = 512;
-

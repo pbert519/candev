@@ -1,5 +1,4 @@
 use crate::hal::can;
-use crate::hal::can::{MaskType, RtrFilterBehavior};
 use crate::{
     CAN_EFF_FLAG, CAN_EFF_MASK, CAN_RAW_FILTER, CAN_RAW_FILTER_MAX, CAN_RTR_FLAG, CAN_SFF_MASK,
     SOL_CAN_RAW,
@@ -138,14 +137,14 @@ impl can::FilterGroup for FilterGroup {
         true
     }
 
-    fn mask(&self) -> Option<MaskType> {
+    fn mask(&self) -> Option<can::MaskType> {
         // There is a configurable mask for each filter
-        Some(MaskType::Individual)
+        Some(can::MaskType::Individual)
     }
 
-    fn rtr(&self) -> RtrFilterBehavior {
+    fn rtr(&self) -> can::RtrFilterBehavior {
         // RTR bit is part of the the filter and the mask
-        RtrFilterBehavior::Configurable
+        can::RtrFilterBehavior::Configurable
     }
 }
 
