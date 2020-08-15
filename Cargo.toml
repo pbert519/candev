@@ -7,7 +7,7 @@ edition = "2018"
 
 [dependencies]
 libc = "0.2.74"
-embedded-hal = { git = "https://github.com/reneherrero/embedded-hal.git", branch = "can" }
+embedded-hal = { git = "https://github.com/timokroeger/embedded-hal.git", branch = "can" }
 nb = "1.0.0"
 
 [features]
