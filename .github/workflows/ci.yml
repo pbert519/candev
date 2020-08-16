@@ -2,15 +2,83 @@ on: [push, pull_request]
 
 name: ci
 
-env:
-  CARGO_TERM_COLOR: always
-
 jobs:
-  build:
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # All generated code should be running on stable now
+        rust: [stable]
+
+        # The default target we're compiling on and for
+        TARGET: [x86_64-unknown-linux-gnu, arm-unknown-linux-gnueabihf]
+
+        include:
+          # Test MSRV
+          - rust: 1.35.0
+            TARGET: x86_64-unknown-linux-gnu
+
+          # Test nightly but don't fail
+          - rust: nightly
+            experimental: true
+            TARGET: x86_64-unknown-linux-gnu
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ matrix.rust }}
+          target: ${{ matrix.TARGET }}
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --target=${{ matrix.TARGET }}
+
+  test:
+    name: Test
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - name: Build
-      run: cargo build --examples --verbose
-    - name: Run tests
-      run: cargo test --doc --verbose
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+
+  fmt:
+    name: Formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - run: rustup component add rustfmt
+      - uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - run: rustup component add clippy
+      - uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: -- -D warnings
