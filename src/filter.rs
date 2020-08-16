@@ -20,7 +20,7 @@ pub struct Filter {
 impl Filter {
     /// Construct a new CAN filter.
     pub fn new(id: u32, mask: u32) -> Self {
-        Filter { id: id, mask: mask }
+        Filter { id, mask }
     }
 }
 
@@ -65,7 +65,7 @@ pub struct FilterGroup {
 impl FilterGroup {
     pub(crate) fn new(fd: c_int) -> Self {
         FilterGroup {
-            fd: fd,
+            fd,
             filters: Vec::new(),
         }
     }

@@ -58,7 +58,7 @@ impl Frame {
         }
 
         Ok(Frame {
-            id: id,
+            id,
             dlc: data.len() as u8,
             pad: 0,
             res0: 0,
