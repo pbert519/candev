@@ -62,7 +62,7 @@ You'll be able to observe the interaction of the two driver instances on the fir
 
 ## Minimum Supported Rust Version (MSRV)
 
-This crate is guaranteed to compile on stable Rust 1.36 and up. It *might* compile with older versions but that may change in any new patch release.
+This crate is guaranteed to compile on stable Rust 1.40 and up. It *might* compile with older versions but that may change in any new patch release.
 
 ## License
 
