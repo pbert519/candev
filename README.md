@@ -11,6 +11,7 @@ SocketCAN based experimental library that implements proposed ([PR](https://gith
 
 1. Make sure the `can-utils` package in installed on your system
 2. Setup Virtual CAN device as follows:
+
 ```bash
 sudo modprobe vcan
 sudo ip link add dev vcan0 type vcan
@@ -18,9 +19,11 @@ sudo ip link set up vcan0
 ```
 
 Note that this can be automated at startup by:
+
 1. Adding a line with `vcan` in `/etc/modules`
 2. Adding the following to `/etc/network/interfaces`
-```
+
+```bash
 auto vcan0
 iface vcan0 inet manual
 pre-up /sbin/ip link add dev $IFACE type vcan
@@ -37,7 +40,7 @@ A simple example on how to receive a CAN frame
 
 You should see `123#DEADBEEF` (or whatever id and data you passed to cansend) appear on the first terminal.
 
-### Transmit 
+### Transmit
 
 A simple example on how to transmit a CAN frame.
 
@@ -51,24 +54,25 @@ You should see `candump` output `vcan0  001   [4]  DE AD BE FF`.
 A sample driver `embedded-hal` CAN driver implementation that makes use of candev and simple echoes a message. In this example, two instances of the driver ping pong a message to each other.
 
 To observe the behavior, do as follows:
+
 1. Run `candump vcan0` in a terminal
 2. Run `cargo run --example driver` in another terminal
 
 You'll be able to observe the interaction of the two driver instances on the first terminal.
 
-## Credits
+## Minimum Supported Rust Version (MSRV)
 
-This project initial starting point was based off [socketcan-rs](https://github.com/mbr/socketcan-rs).
-
-Big thanks to [Timo](https://github.com/timokroeger) for his help and developing the CAN traits for the [embedded-hal](https://github.com/rust-embedded/embedded-hal) project.
+This crate is guaranteed to compile on stable Rust 1.36 and up. It *might* compile with older versions but that may change in any new patch release.
 
 ## License
 
 Licensed under either of
 
+Licensed under either of
+
 - Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or
-  http://www.apache.org/licenses/LICENSE-2.0)
-- MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
+  <http://www.apache.org/licenses/LICENSE-2.0>)
+- MIT license ([LICENSE-MIT](LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
 
 at your option.
 
@@ -77,3 +81,9 @@ at your option.
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
 dual licensed as above, without any additional terms or conditions.
+
+## Credits
+
+This project initial starting point was based off [socketcan-rs](https://github.com/mbr/socketcan-rs).
+
+Big thanks to [Timo](https://github.com/timokroeger) for his help and developing the CAN traits for the [embedded-hal](https://github.com/rust-embedded/embedded-hal) project.
