@@ -40,7 +40,7 @@ impl Socket {
     pub fn new(ifname: &str) -> Result<Socket, SocketError> {
         let ifname = CString::new(ifname).unwrap();
         let ifindex = unsafe { if_nametoindex(ifname.as_ptr()) };
-        if ifindex <= 0 {
+        if ifindex == 0 {
             return Err(SocketError::IOError(io::Error::new(
                 io::ErrorKind::InvalidInput,
                 "Invalid interface",
@@ -274,7 +274,7 @@ impl can::FilteredReceiver for Socket {
                 format!("Maximum number of filters is {}", CAN_RAW_FILTER_MAX),
             )));
         }
-        self.filter_group.add_filter(filter.clone());
+        self.filter_group.add_filter(*filter);
         Ok(())
     }
 
@@ -296,7 +296,7 @@ impl Drop for Socket {
 fn c_timeval_new(t: time::Duration) -> timeval {
     timeval {
         tv_sec: t.as_secs() as time_t,
-        tv_usec: (t.subsec_nanos() / 1000) as suseconds_t,
+        tv_usec: t.subsec_micros() as suseconds_t,
     }
 }
 

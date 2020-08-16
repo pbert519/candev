@@ -70,10 +70,6 @@ impl FilterGroup {
         }
     }
 
-    pub fn len(&self) -> usize {
-        self.filters.len()
-    }
-
     pub fn add_filter(&mut self, filter: Filter) {
         self.filters.push(filter);
     }
@@ -81,6 +77,14 @@ impl FilterGroup {
     pub fn clear_filters(&mut self) {
         self.filters.clear();
         self.set_filters(&[]).unwrap();
+    }
+
+    pub fn len(&self) -> usize {
+        self.filters.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.filters.is_empty()
     }
 
     /// Sets filters on the socket.
@@ -101,7 +105,7 @@ impl FilterGroup {
         name: c_int,
         values: &[T],
     ) -> std::io::Result<()> {
-        let rv = if values.len() < 1 {
+        let rv = if values.is_empty() {
             // can't pass in a pointer to the first element if a 0-length slice,
             // pass a nullpointer instead
             unsafe { setsockopt(fd, level, name, ptr::null(), 0) }
