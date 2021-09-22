@@ -1,6 +1,13 @@
 use crate::{
-    hal::can, Filter, FilterGroup, Frame, SocketError, AF_CAN, CAN_RAW, CAN_RAW_ERR_FILTER,
-    CAN_RAW_FILTER_MAX, CAN_RAW_JOIN_FILTERS, CAN_RAW_LOOPBACK, CAN_RAW_RECV_OWN_MSGS, PF_CAN,
+    hal::can,
+    Frame,
+    SocketError,
+    AF_CAN, //Filter, FilterGroup, CAN_RAW_ERR_FILTER, CAN_RAW_FILTER_MAX,
+    CAN_RAW,
+    CAN_RAW_JOIN_FILTERS,
+    CAN_RAW_LOOPBACK,
+    CAN_RAW_RECV_OWN_MSGS,
+    PF_CAN,
     SOL_CAN_RAW,
 };
 use libc::{
@@ -11,7 +18,7 @@ use libc::{
 use std::{
     ffi::CString,
     io,
-    iter::{once, Once},
+    // iter::{once, Once},
     mem::size_of,
     time,
 };
@@ -32,7 +39,7 @@ struct CanAddr {
 #[derive(Debug)]
 pub struct Socket {
     fd: c_int,
-    filter_group: FilterGroup,
+    // filter_group: FilterGroup,
 }
 
 impl Socket {
@@ -92,7 +99,7 @@ impl Socket {
 
         Ok(Socket {
             fd: sock_fd,
-            filter_group: FilterGroup::new(sock_fd),
+            // filter_group: FilterGroup::new(sock_fd),
         })
     }
 
@@ -148,9 +155,9 @@ impl Socket {
     /// special error frames by the socket. Enabling error conditions by
     /// setting `ERR_MASK_ALL` or another non-empty error mask causes the
     /// socket to receive notification about the specified conditions.
-    pub fn set_error_mask(&self, mask: u32) -> io::Result<()> {
-        self.set_socket_option(self.fd, SOL_CAN_RAW, CAN_RAW_ERR_FILTER, &mask)
-    }
+    // pub fn set_error_mask(&self, mask: u32) -> io::Result<()> {
+    //     self.set_socket_option(self.fd, SOL_CAN_RAW, CAN_RAW_ERR_FILTER, &mask)
+    // }
 
     /// Enable or disable loopback.
     ///
@@ -206,7 +213,7 @@ impl Socket {
     }
 }
 
-impl can::Transmitter for Socket {
+impl can::nb::Can for Socket {
     type Frame = Frame;
     type Error = SocketError;
 
@@ -228,11 +235,6 @@ impl can::Transmitter for Socket {
 
         Ok(Option::None)
     }
-}
-
-impl can::Receiver for Socket {
-    type Frame = Frame;
-    type Error = SocketError;
 
     fn receive(&mut self) -> Result<<Self>::Frame, nb::Error<<Self>::Error>> {
         let mut frame = Frame::default();
@@ -259,6 +261,7 @@ impl can::Receiver for Socket {
     }
 }
 
+/*
 impl can::FilteredReceiver for Socket {
     type Filter = Filter;
     type FilterGroup = FilterGroup;
@@ -287,6 +290,8 @@ impl can::FilteredReceiver for Socket {
         once(self.filter_group.clone())
     }
 }
+*/
+
 impl Drop for Socket {
     fn drop(&mut self) {
         self.close().ok(); // ignore result

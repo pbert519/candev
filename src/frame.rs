@@ -95,27 +95,43 @@ impl Frame {
 }
 
 impl can::Frame for Frame {
-    /// Creates a new frame with a standard identifier.
-    fn new_standard(id: u32, data: &[u8]) -> Result<Self, ()> {
-        match Self::new(id, data, false, false) {
-            Ok(frame) => Ok(frame),
-            _ => Err(()),
-        }
-    }
-
     /// Creates a new frame with an extended identifier.
-    fn new_extended(id: u32, data: &[u8]) -> Result<Self, ()> {
-        match Self::new(id, data, false, false) {
-            Ok(frame) => Ok(frame),
-            _ => Err(()),
+    fn new(id: impl Into<can::Id>, data: &[u8]) -> Result<Self, ()> {
+        match id.into() {
+            can::Id::Extended(value) => match Self::new(value.as_raw(), data, false, false) {
+                Ok(frame) => Ok(frame),
+                _ => Err(()),
+            },
+            can::Id::Standard(value) => {
+                match Self::new(value.as_raw() as u32, data, false, false) {
+                    Ok(frame) => Ok(frame),
+                    _ => Err(()),
+                }
+            }
         }
     }
 
-    fn id(&self) -> u32 {
+    fn new_remote(id: impl Into<can::Id>, dlc: usize) -> Result<Self, ()> {
+        let data: [u8; 0] = [];
+        match id.into() {
+            can::Id::Extended(value) => match Self::new(value.as_raw(), &data, false, false) {
+                Ok(frame) => Ok(frame),
+                _ => Err(()),
+            },
+            can::Id::Standard(value) => {
+                match Self::new(value.as_raw() as u32, &data, false, false) {
+                    Ok(frame) => Ok(frame),
+                    _ => Err(()),
+                }
+            }
+        }
+    }
+
+    fn id(&self) -> can::Id {
         if self.is_extended() {
-            self.id & EFF_MASK
+            can::Id::Extended(can::ExtendedId::new(self.id & EFF_MASK).unwrap())
         } else {
-            self.id & SFF_MASK
+            can::Id::Standard(can::StandardId::new((self.id & SFF_MASK) as u16).unwrap())
         }
     }
 
@@ -131,11 +147,11 @@ impl can::Frame for Frame {
         &self.data[..(self.dlc as usize)]
     }
 
-    fn with_rtr(&mut self, dlc: usize) -> &mut Self {
-        self.id |= RTR_FLAG;
-        self.dlc = dlc as u8;
-        self
-    }
+    // fn with_rtr(&mut self, dlc: usize) -> &mut Self {
+    //     self.id |= RTR_FLAG;
+    //     self.dlc = dlc as u8;
+    //     self
+    // }
 
     fn is_remote_frame(&self) -> bool {
         self.id & RTR_FLAG != 0
