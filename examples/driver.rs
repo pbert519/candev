@@ -1,5 +1,5 @@
 use candev::Socket;
-use embedded_hal::can::{Frame, Receiver, Transmitter};
+use embedded_hal::can::{nb::Can, Frame, StandardId};
 use std::thread;
 
 #[derive(Debug)]
@@ -12,7 +12,7 @@ impl<T, F, E> Driver<T>
 where
     F: Frame,
     E: core::fmt::Debug,
-    T: Receiver<Frame = F, Error = E> + Transmitter<Frame = F, Error = E>,
+    T: embedded_hal::can::nb::Can<Frame = F, Error = E>,
 {
     pub fn echo(&mut self) {
         loop {
@@ -33,9 +33,11 @@ fn main() {
     let socket2 = Socket::new("vcan0").unwrap();
     let mut driver2 = Driver { id: 2, t: socket2 };
     let child2 = thread::spawn(move || {
-        let frame =
-            <Socket as Transmitter>::Frame::new_standard(driver2.id, &[0xDE, 0xAD, 0xBE, 0xFF])
-                .unwrap();
+        let frame = Frame::new(
+            StandardId::new(driver2.id as u16).unwrap(),
+            &[0xDE, 0xAD, 0xBE, 0xFF],
+        )
+        .unwrap();
         driver2.t.transmit(&frame).unwrap();
         driver2.echo();
     });

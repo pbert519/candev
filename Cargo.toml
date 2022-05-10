@@ -3,11 +3,11 @@ name = "candev"
 categories = ["os::unix-apis"]
 version = "0.1.0"
 authors = ["René Herrero>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 libc = "0.2.74"
-embedded-hal = { git = "https://github.com/timokroeger/embedded-hal", branch = "can-take-4" }
+embedded-hal = { git = "https://github.com/rust-embedded/embedded-hal.git", branch = "master" }
 nb = "1.0.0"
 
 [features]

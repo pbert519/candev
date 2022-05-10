@@ -1,4 +1,5 @@
 use crate::Frame;
+use embedded_hal::can::ErrorKind;
 use std::{convert::TryFrom, io::Error};
 
 /// Errors opening socket
@@ -6,6 +7,12 @@ use std::{convert::TryFrom, io::Error};
 pub enum SocketError {
     /// System error while trying to look up device name
     IOError(Error),
+}
+
+impl embedded_hal::can::Error for SocketError {
+    fn kind(&self) -> ErrorKind {
+        ErrorKind::Other
+    }
 }
 
 impl From<Error> for SocketError {
@@ -26,10 +33,10 @@ pub enum ConstructionError {
 /// Helper function to retrieve a specific byte of frame data or returning an
 /// `Err(..)` otherwise.
 fn get_data(frame: &Frame, idx: u8) -> Result<u8, DecodingError> {
-    Ok(*(frame
+    Ok(*frame
         .data()
         .get(idx as usize)
-        .ok_or_else(|| DecodingError::NotEnoughData(idx)))?)
+        .ok_or(DecodingError::NotEnoughData(idx))?)
 }
 
 /// Error decoding a CanError from a CanFrame.

@@ -1,14 +1,12 @@
 use crate::hal::can;
-use crate::{
-    CanError, ConstructionError, DecodingError, EFF_FLAG, EFF_MASK, ERR_FLAG, ERR_MASK, RTR_FLAG,
-    SFF_MASK,
-};
+use crate::{CanError, ConstructionError, DecodingError};
+use libc::{CAN_EFF_FLAG, CAN_EFF_MASK, CAN_ERR_FLAG, CAN_ERR_MASK, CAN_RTR_FLAG, CAN_SFF_MASK};
 
 /// Frame
 ///
 /// Uses the same memory layout as the underlying kernel struct for performance
 /// reasons.
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Default)]
 #[repr(C)]
 pub struct Frame {
     /// 32 bit CAN_ID + EFF/RTR/ERR flags
@@ -33,21 +31,21 @@ impl Frame {
             return Err(ConstructionError::TooMuchData);
         }
 
-        if id > EFF_MASK {
+        if id > CAN_EFF_MASK {
             return Err(ConstructionError::IDTooLarge);
         }
 
         // set EFF_FLAG on large message
-        if id > SFF_MASK {
-            id |= EFF_FLAG;
+        if id > CAN_SFF_MASK {
+            id |= CAN_EFF_FLAG;
         }
 
         if rtr {
-            id |= RTR_FLAG;
+            id |= CAN_RTR_FLAG;
         }
 
         if err {
-            id |= ERR_FLAG;
+            id |= CAN_ERR_FLAG;
         }
 
         let mut full_data = [0; 8];
@@ -73,12 +71,12 @@ impl Frame {
 
     /// Return the error message
     pub fn err(&self) -> u32 {
-        self.id & ERR_MASK
+        self.id & CAN_ERR_MASK
     }
 
     /// Check if frame is an error message
     pub fn is_error(&self) -> bool {
-        self.id & ERR_FLAG != 0
+        self.id & CAN_ERR_FLAG != 0
     }
 
     /// Read error from message and transform it into a `CanError`.
@@ -96,32 +94,32 @@ impl Frame {
 
 impl can::Frame for Frame {
     /// Creates a new frame with an extended identifier.
-    fn new(id: impl Into<can::Id>, data: &[u8]) -> Result<Self, ()> {
+    fn new(id: impl Into<can::Id>, data: &[u8]) -> Option<Self> {
         match id.into() {
             can::Id::Extended(value) => match Self::new(value.as_raw(), data, false, false) {
-                Ok(frame) => Ok(frame),
-                _ => Err(()),
+                Ok(frame) => Some(frame),
+                _ => None,
             },
             can::Id::Standard(value) => {
                 match Self::new(value.as_raw() as u32, data, false, false) {
-                    Ok(frame) => Ok(frame),
-                    _ => Err(()),
+                    Ok(frame) => Some(frame),
+                    _ => None,
                 }
             }
         }
     }
 
-    fn new_remote(id: impl Into<can::Id>, dlc: usize) -> Result<Self, ()> {
-        let data: [u8; 0] = [];
+    fn new_remote(id: impl Into<can::Id>, dlc: usize) -> Option<Self> {
+        let data = vec![0; dlc];
         match id.into() {
-            can::Id::Extended(value) => match Self::new(value.as_raw(), &data, false, false) {
-                Ok(frame) => Ok(frame),
-                _ => Err(()),
+            can::Id::Extended(value) => match Self::new(value.as_raw(), &data, true, false) {
+                Ok(frame) => Some(frame),
+                _ => None,
             },
             can::Id::Standard(value) => {
-                match Self::new(value.as_raw() as u32, &data, false, false) {
-                    Ok(frame) => Ok(frame),
-                    _ => Err(()),
+                match Self::new(value.as_raw() as u32, &data, true, false) {
+                    Ok(frame) => Some(frame),
+                    _ => None,
                 }
             }
         }
@@ -129,14 +127,14 @@ impl can::Frame for Frame {
 
     fn id(&self) -> can::Id {
         if self.is_extended() {
-            can::Id::Extended(can::ExtendedId::new(self.id & EFF_MASK).unwrap())
+            can::Id::Extended(can::ExtendedId::new(self.id & CAN_EFF_MASK).unwrap())
         } else {
-            can::Id::Standard(can::StandardId::new((self.id & SFF_MASK) as u16).unwrap())
+            can::Id::Standard(can::StandardId::new((self.id & CAN_SFF_MASK) as u16).unwrap())
         }
     }
 
     fn is_extended(&self) -> bool {
-        self.id & EFF_FLAG != 0
+        self.id & CAN_EFF_FLAG != 0
     }
 
     fn dlc(&self) -> usize {
@@ -147,26 +145,7 @@ impl can::Frame for Frame {
         &self.data[..(self.dlc as usize)]
     }
 
-    // fn with_rtr(&mut self, dlc: usize) -> &mut Self {
-    //     self.id |= RTR_FLAG;
-    //     self.dlc = dlc as u8;
-    //     self
-    // }
-
     fn is_remote_frame(&self) -> bool {
-        self.id & RTR_FLAG != 0
-    }
-}
-
-impl Default for Frame {
-    fn default() -> Self {
-        Frame {
-            id: 0,
-            dlc: 0,
-            pad: 0,
-            res0: 0,
-            res1: 0,
-            data: [0; 8],
-        }
+        self.id & CAN_RTR_FLAG != 0
     }
 }

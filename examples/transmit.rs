@@ -1,9 +1,9 @@
 use candev::Socket;
-use embedded_hal::can::{Frame, Transmitter};
+use embedded_hal::can::{nb::Can, Frame, StandardId};
 
 fn main() {
     let mut socket = Socket::new("vcan0").unwrap();
 
-    let frame = <Socket as Transmitter>::Frame::new_standard(1, &[0xDE, 0xAD, 0xBE, 0xFF]).unwrap();
+    let frame = Frame::new(StandardId::new(1).unwrap(), &[0xDE, 0xAD, 0xBE, 0xFF]).unwrap();
     socket.transmit(&frame).unwrap();
 }
