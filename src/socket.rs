@@ -204,11 +204,11 @@ impl Socket {
     }
 }
 
-impl embedded_can::nb::Can for Socket {
+impl embedded_can::blocking::Can for Socket {
     type Frame = Frame;
     type Error = SocketError;
 
-    fn transmit(&mut self, frame: &Frame) -> nb::Result<Option<Frame>, SocketError> {
+    fn transmit(&mut self, frame: &Frame) -> Result<(), Self::Error> {
         // not a mutable reference needed (see std::net::UdpSocket) for
         // a comparison
         // debug!("Sending: {:?}", frame);
@@ -219,15 +219,13 @@ impl embedded_can::nb::Can for Socket {
         };
 
         if write_rv as usize != size_of::<Frame>() {
-            return Err(nb::Error::from(SocketError::from(
-                io::Error::last_os_error(),
-            )));
+            return Err(SocketError::from(io::Error::last_os_error()));
         }
 
-        Ok(Option::None)
+        Ok(())
     }
 
-    fn receive(&mut self) -> Result<<Self>::Frame, nb::Error<<Self>::Error>> {
+    fn receive(&mut self) -> Result<Self::Frame, Self::Error> {
         let mut frame = Frame::default();
         let nbytes = unsafe {
             let frame_ptr = &mut frame as *mut Frame;
@@ -236,52 +234,12 @@ impl embedded_can::nb::Can for Socket {
 
         if nbytes as usize != size_of::<Frame>() {
             let e = io::Error::last_os_error();
-            match e.kind() {
-                io::ErrorKind::WouldBlock => {
-                    return Err(nb::Error::WouldBlock);
-                }
-                _ => {
-                    return Err(nb::Error::from(SocketError::from(
-                        io::Error::last_os_error(),
-                    )));
-                }
-            };
+            return Err(SocketError::IOError(e));
         }
 
         Ok(frame)
     }
 }
-
-/*
-impl can::FilteredReceiver for Socket {
-    type Filter = Filter;
-    type FilterGroup = FilterGroup;
-    type FilterGroups = std::iter::Once<FilterGroup>;
-
-    fn add_filter(
-        &mut self,
-        filter: &<Self as can::FilteredReceiver>::Filter,
-    ) -> Result<(), <Self as can::Receiver>::Error> {
-        if self.filter_group.len() == CAN_RAW_FILTER_MAX as usize {
-            return Err(SocketError::IOError(io::Error::new(
-                io::ErrorKind::InvalidInput,
-                format!("Maximum number of filters is {}", CAN_RAW_FILTER_MAX),
-            )));
-        }
-        self.filter_group.add_filter(*filter);
-        Ok(())
-    }
-
-    fn clear_filters(&mut self) {
-        self.filter_group.clear_filters();
-    }
-
-    fn filter_groups(&self) -> Once<FilterGroup> {
-        // All filters have the same capability: There is only one group.
-        once(self.filter_group.clone())
-    }
-}
-*/
 
 impl Drop for Socket {
     fn drop(&mut self) {
@@ -307,28 +265,16 @@ mod tests {
 
     #[cfg(feature = "vcan0")]
     mod vcan {
-        use embedded_can::{nb::Can, Frame};
         use crate::Socket;
+        use embedded_can::{blocking::Can, Frame};
         use embedded_can::{Id, StandardId};
         use libc::CAN_ERR_MASK;
-        use nb::block;
-        use std::time;
 
         const VCAN0: &str = "vcan0";
         /// error mask that will instruct the socket to report all errors
         pub const ERR_MASK_ALL: u32 = CAN_ERR_MASK;
         /// an error mask that will instruct the socket to drop all errors
         pub const ERR_MASK_NONE: u32 = 0x00000000;
-
-        #[test]
-        #[ignore = "seems not to work"]
-        fn vcan0_timeout() {
-            let mut socket = Socket::new(VCAN0).unwrap();
-            socket
-                .set_read_timeout(time::Duration::from_millis(100))
-                .unwrap();
-            block!(socket.receive()).unwrap();
-        }
 
         #[test]
         fn vcan0_set_error_mask() {
@@ -363,7 +309,8 @@ mod tests {
             match socket.receive() {
                 Ok(_) => assert!(false),
                 Err(e) => match e {
-                    nb::Error::WouldBlock => {}
+                    crate::SocketError::IOError(err)
+                        if err.kind() == std::io::ErrorKind::WouldBlock => {}
                     _ => assert!(false),
                 },
             }

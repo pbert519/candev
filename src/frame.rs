@@ -95,10 +95,12 @@ impl embedded_can::Frame for Frame {
     /// Creates a new frame with an extended identifier.
     fn new(id: impl Into<embedded_can::Id>, data: &[u8]) -> Option<Self> {
         match id.into() {
-            embedded_can::Id::Extended(value) => match Self::new(value.as_raw(), data, false, false) {
-                Ok(frame) => Some(frame),
-                _ => None,
-            },
+            embedded_can::Id::Extended(value) => {
+                match Self::new(value.as_raw(), data, false, false) {
+                    Ok(frame) => Some(frame),
+                    _ => None,
+                }
+            }
             embedded_can::Id::Standard(value) => {
                 match Self::new(value.as_raw() as u32, data, false, false) {
                     Ok(frame) => Some(frame),
@@ -111,10 +113,12 @@ impl embedded_can::Frame for Frame {
     fn new_remote(id: impl Into<embedded_can::Id>, dlc: usize) -> Option<Self> {
         let data = vec![0; dlc];
         match id.into() {
-            embedded_can::Id::Extended(value) => match Self::new(value.as_raw(), &data, true, false) {
-                Ok(frame) => Some(frame),
-                _ => None,
-            },
+            embedded_can::Id::Extended(value) => {
+                match Self::new(value.as_raw(), &data, true, false) {
+                    Ok(frame) => Some(frame),
+                    _ => None,
+                }
+            }
             embedded_can::Id::Standard(value) => {
                 match Self::new(value.as_raw() as u32, &data, true, false) {
                     Ok(frame) => Some(frame),
@@ -126,9 +130,13 @@ impl embedded_can::Frame for Frame {
 
     fn id(&self) -> embedded_can::Id {
         if self.is_extended() {
-            embedded_can::Id::Extended(embedded_can::ExtendedId::new(self.id & CAN_EFF_MASK).unwrap())
+            embedded_can::Id::Extended(
+                embedded_can::ExtendedId::new(self.id & CAN_EFF_MASK).unwrap(),
+            )
         } else {
-            embedded_can::Id::Standard(embedded_can::StandardId::new((self.id & CAN_SFF_MASK) as u16).unwrap())
+            embedded_can::Id::Standard(
+                embedded_can::StandardId::new((self.id & CAN_SFF_MASK) as u16).unwrap(),
+            )
         }
     }
 

@@ -8,7 +8,6 @@ edition = "2021"
 [dependencies]
 libc = "0.2.74"
 embedded-can = { git = "https://github.com/rust-embedded/embedded-hal.git", branch = "master" }
-nb = "1.0.0"
 
 [features]
 vcan0 = []

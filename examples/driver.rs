@@ -1,5 +1,5 @@
 use candev::Socket;
-use embedded_can::{nb::Can, Frame, StandardId};
+use embedded_can::{blocking::Can, Frame, StandardId};
 use std::thread;
 
 #[derive(Debug)]
@@ -12,7 +12,7 @@ impl<T, F, E> Driver<T>
 where
     F: Frame,
     E: core::fmt::Debug,
-    T: embedded_can::nb::Can<Frame = F, Error = E>,
+    T: embedded_can::blocking::Can<Frame = F, Error = E>,
 {
     pub fn echo(&mut self) {
         loop {
