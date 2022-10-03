@@ -1,5 +1,5 @@
 use candev::Socket;
-use embedded_hal::can::{nb::Can, Frame, StandardId};
+use embedded_can::{nb::Can, Frame, StandardId};
 
 fn main() {
     let mut socket = Socket::new("vcan0").unwrap();

@@ -1,4 +1,4 @@
-use crate::{hal::can, Frame, SocketError};
+use crate::{Frame, SocketError};
 use libc::{
     bind, c_int, c_short, c_uint, c_void, close, fcntl, if_nametoindex, read, setsockopt, sockaddr,
     socket, socklen_t, suseconds_t, time_t, timeval, write, AF_CAN, CAN_RAW, CAN_RAW_ERR_FILTER,
@@ -204,7 +204,7 @@ impl Socket {
     }
 }
 
-impl can::nb::Can for Socket {
+impl embedded_can::nb::Can for Socket {
     type Frame = Frame;
     type Error = SocketError;
 
@@ -307,9 +307,9 @@ mod tests {
 
     #[cfg(feature = "vcan0")]
     mod vcan {
-        use crate::hal::can::{nb::Can, Frame};
+        use embedded_can::{nb::Can, Frame};
         use crate::Socket;
-        use embedded_hal::can::{Id, StandardId};
+        use embedded_can::{Id, StandardId};
         use libc::CAN_ERR_MASK;
         use nb::block;
         use std::time;

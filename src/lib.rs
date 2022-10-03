@@ -1,4 +1,3 @@
-use embedded_hal as hal;
 mod error;
 pub use error::{CanError, ConstructionError, DecodingError, SocketError};
 

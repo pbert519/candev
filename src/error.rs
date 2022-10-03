@@ -1,5 +1,5 @@
 use crate::Frame;
-use embedded_hal::can::ErrorKind;
+use embedded_can::ErrorKind;
 use std::{convert::TryFrom, io::Error};
 
 /// Errors opening socket
@@ -9,7 +9,7 @@ pub enum SocketError {
     IOError(Error),
 }
 
-impl embedded_hal::can::Error for SocketError {
+impl embedded_can::Error for SocketError {
     fn kind(&self) -> ErrorKind {
         ErrorKind::Other
     }
