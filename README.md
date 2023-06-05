@@ -1,3 +1,5 @@
+## The [socketcan](https://github.com/socketcan-rs/socketcan-rs) crate has support for the embedded-can crates since version 2.0.0
+
 # candev
 
 ![ci](https://github.com/reneherrero/candev/workflows/ci/badge.svg)
